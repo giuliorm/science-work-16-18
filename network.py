@@ -93,9 +93,9 @@ class NeuralNetwork:
 
             rez = self.__update_mini_batch(batchY, learning_rate, eps)
             if rez:
-                return rez
+                return 1
 
-        return None
+        return 0
 
     def __update_mini_batch(self, y, learning_rate, eps):
 
@@ -118,4 +118,6 @@ sinData = []
 for i in range(-1500, 1500):
     sinData.append(sin(i))
 
-rez = n.fit(np.asarray(sinData), 300)
+rez = n.fit(np.asarray(sinData), 2)
+print(rez)
+print(n.w)
