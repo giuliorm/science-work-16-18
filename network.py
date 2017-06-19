@@ -3,12 +3,13 @@ import numpy as np
 import random
 from scipy.integrate import odeint
 import matplotlib.pyplot as plt
-class NeuralNetwork:
 
+
+class NeuralNetwork:
     neurons_count = 0
     time = 0
 
-    #TODO: define a proper range of ode solution
+    # TODO: define a proper range of ode solution
 
     def __init__(self, neurons_count, eps=10e-2):
 
@@ -19,7 +20,6 @@ class NeuralNetwork:
                            for i in range(0, neurons_count)])
 
         self.neurons_count = neurons_count
-
 
     def plot_diff(self, t, sol, labels):
         for i in range(0,len(labels)):
@@ -39,15 +39,15 @@ class NeuralNetwork:
             dydt.append(e_i)
         return dydt
 
-    #ya - vector of begin conditions. a(i - 1) in generative mode, and y(i) in learn mode
+    # ya - vector of begin conditions. a(i - 1) in generative mode, and y(i) in learn mode
     def solve_diff(self, y):
-        #solve diff and returns a
+        # Solve diff and returns a
 
         t = np.linspace(0, 10, 101)
         sol = odeint(self.__diff_func, y, t)
-#       self.plot_diff(t, sol, range(1, len(self.a)))
+        # self.plot_diff(t, sol, range(1, len(self.a)))
 
-        #return vector solution
+        # Return vector solution
         return np.asarray(sol)
 
     def __cost(self, y):
@@ -56,22 +56,22 @@ class NeuralNetwork:
         diff = solution - y
         return 0.5 * np.mean(diff ** 2)
 
-    def __grad__(self, y, eps = 0.01, J=__cost):
-        #w_0 = self.w
+    def __grad__(self, y, eps = 0.01):
+        # w_0 = self.w
         num_grad = np.zeros(self.w.shape)
-        #initial_cost = J(neuron, X, y)
+        # initial_cost = J(neuron, X, y)
 
         for i in range(len(self.w)):
             old_wi = self.w[i].copy()
             # change weight
 
             self.w[i] += eps
-            gradPlus = J(y)
+            gradPlus = self.__cost(y)
 
             self.w[i] = old_wi
 
             self.w[i] -= eps
-            gradMinus = J(y)
+            gradMinus = self.__cost(y)
 
             # New value of J and new value of grad with i-th weight
             num_grad[i] = (gradPlus - gradMinus)/(2*eps)
@@ -84,7 +84,7 @@ class NeuralNetwork:
     def fit(self, y, batch_size, learning_rate=0.1, eps=1e-6, max_steps=200):
         indexes = list(range(len(y)))
         for i in range(1, max_steps):
-            #iteration tracking
+            # iteration tracking
             self.time = i
 
             sample_ind = np.random.choice(a=indexes, size=batch_size, replace=False)
@@ -93,9 +93,9 @@ class NeuralNetwork:
 
             rez = self.__update_mini_batch(batchY, learning_rate, eps)
             if rez:
-                return 1
+                return rez
 
-        return 0
+        return None
 
     def __update_mini_batch(self, y, learning_rate, eps):
 
@@ -109,6 +109,13 @@ class NeuralNetwork:
         return rez
 
 from math import cos
+from math import sin
 
-n = NeuralNetwork(neurons_count=1)
-sol = n.solve_diff(np.asarray([cos(x) for x in range(-10, 10)]))
+n = NeuralNetwork(neurons_count=2)
+# sol = n.solve_diff(np.asarray([cos(x) for x in range(-10, 10)]))
+sinData = []
+
+for i in range(-1500, 1500):
+    sinData.append(sin(i))
+
+rez = n.fit(np.asarray(sinData), 300)
