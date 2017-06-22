@@ -106,7 +106,7 @@ class NeuralNetwork:
                 return 1
 
         return 0
-
+# comment
     def __update_mini_batch(self, y, linspace, learning_rate, eps):
         for yitem in y:
             grad = self.__grad__(yitem, linspace)
