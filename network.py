@@ -7,7 +7,6 @@ import matplotlib.pyplot as plt
 
 class NeuralNetwork:
 
-
     # TODO: define a proper range of ode solution
 
     def __init__(self, neurons_count, eps=10e-2):
@@ -23,7 +22,7 @@ class NeuralNetwork:
 
     def plot_diff(self, t, sol, labels):
         for i in range(0,len(labels)):
-            plt.plot(t, sol[i, :], label=str(labels[i]))
+            plt.plot(t, sol[:, i], label=str(labels[i]))
 
         plt.legend(loc='best')
         plt.xlabel('t')
@@ -41,6 +40,7 @@ class NeuralNetwork:
 
 
     # ya - vector of begin conditions. a(i - 1) in generative mode, and y(i) in learn mode
+
     def solve_diff(self, y, t):
         # Solve diff and returns a
 
@@ -49,7 +49,7 @@ class NeuralNetwork:
         # self.plot_diff(t, sol, range(1, len(self.a)))
 
         # Return vector solution
-        return self.a
+        return sol
 
     def __cost(self, y, linspace):
         y = np.asarray(y)
@@ -84,11 +84,11 @@ class NeuralNetwork:
 
 
     def generate(self, linspace):
-        self.a = self.solve_diff(self.a, linspace)
+        self.solve_diff(self.a[0], linspace)
         data = []
         for item in self.a:
-            data.extend(item)
-        return data
+            data.append(item)
+        return np.asarray(data)
 
     def fit(self, y, batch_size, linspace, learning_rate=0.1, eps=1e-6, max_steps=200):
         indexes = list(range(len(y)))
@@ -101,39 +101,46 @@ class NeuralNetwork:
             batchY = y[sample_ind]
 
             rez = self.__update_mini_batch(batchY, linspace, learning_rate, eps)
+            print("step " + str(i))
             if rez:
                 return 1
 
         return 0
 
     def __update_mini_batch(self, y, linspace, learning_rate, eps):
+        for yitem in y:
+            grad = self.__grad__(yitem, linspace)
 
-        grad = self.__grad__(y, linspace)
-
-        jBefore = self.__cost(y, linspace)
-        self.w = self.w - learning_rate * grad
-        jAfter = self.__cost(y, linspace)
+            jBefore = self.__cost(yitem, linspace)
+            self.w = self.w - learning_rate * grad
+            jAfter = self.__cost(yitem, linspace)
 
         rez = 1 if abs(jBefore - jAfter) <= eps else 0
+
         return rez
 
 from math import cos
 from math import sin
 
-n = NeuralNetwork(neurons_count=1)
+# neuron count corresponds to number of joints
+
+n = NeuralNetwork(neurons_count=2)
 # sol = n.solve_diff(np.asarray([cos(x) for x in range(-10, 10)]))
 sinData = []
 
-t = np.linspace(-10, 10, 50)
+t = np.linspace(-30, 30, 10000)
 
 for i in range(len(t)):
-    sinData.append(sin(t[i]))
+    sinData.append([sin(t[i]), cos(t[i])])
 
-rez = n.fit(y=np.asarray(sinData), batch_size=1, linspace=t)
+rez = n.fit(y=np.asarray(sinData), batch_size=20, linspace=t)
+genData = n.generate(t)
+
+n.plot_diff(t, genData, ["gen sin {0}".format(i)])
 
 print("Network train result: ")
 print(rez)
 
 
-n.plot_diff(t, np.asarray([np.asarray(sinData), np.asarray(genData)]) , ["sinus", "gen"])
-i = 1
+#
+#i = 1
