@@ -1,20 +1,3 @@
-#using System;
-#using System.Collections.Generic;
-#using System.Linq;
-#using System.Text;
-#using System.Threading.Tasks;
-#using System.IO;
-#using System.Runtime.Serialization.Formatters;
-#using System.Runtime.Serialization.Formatters.Binary;
-#using SharpDX;
-#using Fusion;
-#using Fusion.Core.Mathematics;
-#using Fusion.Drivers.Graphics;
-#using Fusion.Core;
-#using Fusion.Core.Content;
-
-
-#namespace Fusion.Engine.Graphics {
 class Scene:
 	def __init__(self):
 		self.nodes = [] 	#List<Node>			nodes		= new List<Node>();
@@ -25,52 +8,15 @@ class Scene:
 		self.trackCount = 0
 		self.animData = None#Matrix[,]	animData = null;
 
-		#protected override void Dispose ( bool disposing )
-		#{
-		#	if (disposing) {
-		#			foreach ( var mesh in Meshes ) {
-		#			if (mesh!=null) {
-		#				mesh.Dispose();
-		#			}
-		#		}
-		#	}
-		#	base.Dispose(disposing);
-		#}
-
-
-		#/*---------------------------------------------------------------------
-		# *
-		# *	Topology stuff :
-		# *
-		---------------------------------------------------------------------*/
-
-		#/// <summary>
-		#/// Copies absolute transform to provided array.
-		#/// </summary>
-		#/// <param name="destination"></param>
-		#public void CopyLocalTransformsTo ( Matrix[] destination )
-		#{
 	def CopyLocalTransformsTo(self, destination):
 		for i in xrange(len(self.nodes)):
 			node = self.nodes[i]
 			transform = node.Transform
 			destination[i] = transform
 
-	#	@	/// <summary>
-	#	/// Copies absolute transform to provided array.
-	#	/// </summary>
-	#	/// <param name="destination"></param>
-	#public void ComputeAbsoluteTransforms ( Matrix[] destination )
 	def  ComputeAbsoluteTransforms(self, destination):
-	#{
 		if  len(destination) < len(self.nodes):
 			return
-		#{
-		#	throw new ArgumentOutOfRangeException("destination.Length must be greater of equal to Nodes.Count");
-		#}
-
-
-		#if false
 		for i in xrange(len(self.nodes)):
 			node = self.nodes[i]
 			transform = node.Transform
@@ -87,7 +33,6 @@ class Scene:
 			transform.Transpose()
 			destination[i] = transform
 
-		#else
 		for  i in xrange(len(self.nodes)):
 			node = self.nodes[i]
 			transform = node.Transform
@@ -99,16 +44,7 @@ class Scene:
 				parentIndex = self.nodes[parentIndex].ParentIndex
 			destination[i] = transform
 
-		#/// <summary>
-		#/// Computes absolute transformations using local transforms and scene's hierarchy.
-		#/// Number of source matricies, destination matricies and node count must be equal.
-		#/// Arguments 'sourceLocalTransforms' and 'destinationGlobalTransforms' may be the same object.
-		#/// </summary>
-		#/// <param name="sourceLocalTransforms"></param>
-		#/// <param name="destinationGlobalTransforms"></param>
-		#public void ComputeAbsoluteTransforms ( Matrix[] source, Matrix[] destination )
 	def ComputeAbsoluteTransforms2(self, source, destination):
-	#{
 		if  source is None or destination is None or len(source) < len(self.nodes) or len(destination) < \
 				len(self.nodes):
 			return
@@ -124,200 +60,100 @@ class Scene:
 				parentIndex =	self.nodes[parentIndex].ParentIndex
 			destination[i] = transform
 
-		#/// <summary>
-		#/// Computes bones transforms for skinning taking in account bind position.
-		#/// </summary>
-		#/// <param name="source">Local bone transforms</param>
-		#/// <param name="destination">Global bone transforms multiplied by bind pose matrix</param>
-	#public void ComputeBoneTransforms ( Matrix[] source, Matrix[] destination )
-	#{
 	def ComputeBoneTransforms(self, source, destination):
 		self.ComputeAbsoluteTransforms2(source, destination)
 		for i in xrange(len(self.nodes)):
-			destination[i] = Matrix.Invert( Nodes[i].BindPose ) * destination[i];
+			destination[i] = Matrix.Invert( self.nodes[i].BindPose ) * destination[i] # what to do with matrix invert?
+
+	def DeleteAnimation(self):
+		self.animData = None
+		self.firstFrame = 0
+		self.lastFrame = 0
+		self.trackCount	= 0
+
+	def CreateAnimation(self, firstFrame, lastFrame, nodeCount):
+		if firstFrame > lastFrame or  nodeCount <= 0:
+			return
+		self.firstFrame	 = firstFrame
+		self.lastFrame 	= lastFrame
+		self.trackCount	= nodeCount
+		self.animData = []
+		for i in range(lastFrame - firstFrame + 1):
+			l = []
+			self.animData.append(l)
+			for j in range(nodeCount):
+				l.append(0)
+
+	def SetAnimKey(self, frame, trackIndex, transform):
+		if self.animData is None or frame < self.firstFrame	or frame > self.lastFrame or trackIndex < 0	or trackIndex \
+				>= self.trackCount:
+			return
+		for i in range(frame - self.firstFrame):
+			self.animData[i][trackIndex] = transform
+
+	def GetAnimKey (self, frame, trackIndex):
+		if self.animData is None or  frame < self.firstFrame or frame > self.lastFrame or trackIndex < 0	or trackIndex >= \
+			self.trackCount:
+			return
+		return self.animData[0:(frame - self.firstFrame)][trackIndex]
+
+
+	def GetAnimSnapshot(self, frame, destination):
+		if self.animData is None or len(destination) < len(self.nodes):
+			return
+		for i in xrange(len(self.nodes)):
+			node = self.nodes[i]
+			destination[i] = node.Transform if node.TrackIndex < 0 else self.GetAnimKey(frame, node.TrackIndex)
+
+
+
+	#public void GetAnimSnapshot ( float frame, int firstFrame, int lastFrame, AnimationMode animMode, Matrix[] destination )
+	def GetAnimSnapshot(self, frame, firstFrame, lastFrame, animMode, destination):
+		if self.animData is None or len(destination) < len(self.nodes) or firstFrame < self.firstFrame or \
+			firstFrame > self.lastFrame or lastFrame < self.firstFrame or lastFrame > self.lastFrame or \
+			firstFrame > lastFrame:
+				return
+
+		import math
+		frame0	=	math.floor(frame)
+		frame1	=	frame0 + 1
+		factor	= frame%1 if frame > 0 else (1 + frame%1)
+
+		if (animMode==AnimationMode.Repeat) {
+			frame0	=	MathUtil.Wrap( frame0, firstFrame, lastFrame );
+			frame1	=	MathUtil.Wrap( frame1, firstFrame, lastFrame );
+		} else if (animMode==AnimationMode.Clamp) {
+			frame0	=	MathUtil.Clamp( frame0, firstFrame, lastFrame );
+			frame1	=	MathUtil.Clamp( frame1, firstFrame, lastFrame );
+		}
+
+		for (int i=0; i<Nodes.Count; i++) {
+			var node = Nodes[i];
+
+			if (node.TrackIndex<0) {
+				destination[i] = node.Transform;
+			} else {
+
+				var x0	=	GetAnimKey( frame0, node.TrackIndex );
+				var x1	=	GetAnimKey( frame1, node.TrackIndex );
+
+				Quaternion q0, q1;
+				Vector3 t0, t1;
+				Vector3 s0, s1;
+
+				x0.Decompose( out s0, out q0, out t0 );
+				x1.Decompose( out s1, out q1, out t1 );
+
+				var q	=	Quaternion.Slerp( q0, q1, factor );
+				var t	=	Vector3.Lerp( t0, t1, factor );
+				var s	=	Vector3.Lerp( s0, s1, factor );
+
+				var x	=	Matrix.Scaling( s ) * Matrix.RotationQuaternion( q ) * Matrix.Translation( t );
+
+				destination[i] = x;
+			}
 		}
 	}
-
-		/*-----------------------------------------------------------------------------------------
-		 *
-		 *	Animation stuff :
-		 *
-		-----------------------------------------------------------------------------------------*/
-
-		/// <summary>
-		/// Deletes all animation data.
-		/// </summary>
-		public void DeleteAnimation ()
-		{
-			animData		=	null;
-			firstFrame		=	0;
-			lastFrame		=	0;
-			trackCount	=	0;
-		}
-
-
-
-		/// <summary>
-		/// Creates animation data
-		/// </summary>
-		/// <param name="firstFrame">Inclusive first frame</param>
-		/// <param name="lastFrame"></param>
-		/// <param name="nodeCount"></param>
-		public void CreateAnimation ( int firstFrame, int lastFrame, int nodeCount )
-		{
-			if ( firstFrame > lastFrame ) {
-				throw new ArgumentException("firstFrame > lastFrame");
-			}
-			if ( nodeCount <= 0 ) {
-				throw new ArgumentException("nodeCount must be positive");
-			}
-
-			this.firstFrame		=	firstFrame;
-			this.lastFrame		=	lastFrame;
-			this.trackCount	=	nodeCount;
-
-			animData	=	new Matrix[ lastFrame - firstFrame + 1, nodeCount ];
-		}
-
-
-
-		/// <summary>
-		/// Sets animation key
-		/// </summary>
-		/// <param name="frame"></param>
-		/// <param name="nodeIndex"></param>
-		/// <param name="transform"></param>
-		public void SetAnimKey ( int frame, int trackIndex, Matrix transform )
-		{
-			if ( animData==null ) {
-				throw new InvalidOperationException("Animation data is not created");
-			}
-			if ( frame < firstFrame	|| frame > lastFrame ) {
-				throw new ArgumentOutOfRangeException("frame");
-			}
-			if ( trackIndex < 0	|| trackIndex >= trackCount ) {
-				throw new ArgumentOutOfRangeException("trackIndex");
-			}
-
-			animData[ frame - firstFrame, trackIndex ] = transform;
-		}
-
-
-
-		/// <summary>
-		/// Gets animation key
-		/// </summary>
-		/// <param name="frame"></param>
-		/// <param name="nodeId"></param>
-		/// <returns></returns>
-		public Matrix GetAnimKey ( int frame, int trackIndex )
-		{
-			if ( animData==null ) {
-				throw new InvalidOperationException("Animation data is not created");
-			}
-			if ( frame < firstFrame	|| frame > lastFrame ) {
-				throw new ArgumentOutOfRangeException("frame");
-			}
-			if ( trackIndex < 0	|| trackIndex >= trackCount ) {
-				throw new ArgumentOutOfRangeException("trackIndex");
-			}
-
-			return animData[ frame - firstFrame, trackIndex ];
-		}
-
-
-
-		/// <summary>
-		/// Get local matricies for each node for given animation frame.
-		/// First, this method copies node's local matricies
-		/// then, it replace this matrices by node's animation track values.
-		/// </summary>
-		/// <param name="frame"></param>
-		/// <returns></returns>
-		public void GetAnimSnapshot ( int frame, Matrix[] destination )
-		{
-			if ( animData==null ) {
-				throw new InvalidOperationException("Animation data is not created");
-			}
-
-			if (destination.Length<Nodes.Count) {
-				throw new ArgumentException("destination.Length must be greater of equal to Nodes.Count");
-			}
-
-			for (int i=0; i<Nodes.Count; i++) {
-				var node = Nodes[i];
-				destination[i] = node.TrackIndex < 0 ? node.Transform : GetAnimKey( frame, node.TrackIndex );
-			}
-		}
-
-
-		/// <summary>
-		/// Get local matricies for each node for given animation frame.
-		/// First, this method copies node's local matricies
-		/// then, it replace this matrices by node's animation track values.
-		/// </summary>
-		/// <param name="frame"></param>
-		/// <returns></returns>
-		public void GetAnimSnapshot ( float frame, int firstFrame, int lastFrame, AnimationMode animMode, Matrix[] destination )
-		{
-			if ( animData==null ) {
-				throw new InvalidOperationException("Animation data is not created");
-			}
-
-			if (destination.Length<Nodes.Count) {
-				throw new ArgumentOutOfRangeException("destination.Length must be greater of equal to Nodes.Count");
-			}
-
-			if ( firstFrame < FirstFrame || firstFrame > LastFrame ) {
-				throw new ArgumentOutOfRangeException("firstFrame");
-			}
-			if ( lastFrame < FirstFrame || lastFrame > LastFrame ) {
-				throw new ArgumentOutOfRangeException("firstFrame");
-			}
-			if ( firstFrame > lastFrame ) {
-				throw new ArgumentOutOfRangeException("firstFrame > lastFrame");
-			}
-
-
-			int frame0	=	(int)Math.Floor( frame );
-			int frame1	=	frame0 + 1;
-			var factor	=	(frame > 0) ? (frame%1) : (1 + frame%1);
-
-			if (animMode==AnimationMode.Repeat) {
-				frame0	=	MathUtil.Wrap( frame0, firstFrame, lastFrame );
-				frame1	=	MathUtil.Wrap( frame1, firstFrame, lastFrame );
-			} else if (animMode==AnimationMode.Clamp) {
-				frame0	=	MathUtil.Clamp( frame0, firstFrame, lastFrame );
-				frame1	=	MathUtil.Clamp( frame1, firstFrame, lastFrame );
-			}
-
-			for (int i=0; i<Nodes.Count; i++) {
-				var node = Nodes[i];
-
-				if (node.TrackIndex<0) {
-					destination[i] = node.Transform;
-				} else {
-
-					var x0	=	GetAnimKey( frame0, node.TrackIndex );
-					var x1	=	GetAnimKey( frame1, node.TrackIndex );
-
-					Quaternion q0, q1;
-					Vector3 t0, t1;
-					Vector3 s0, s1;
-
-					x0.Decompose( out s0, out q0, out t0 );
-					x1.Decompose( out s1, out q1, out t1 );
-
-					var q	=	Quaternion.Slerp( q0, q1, factor );
-					var t	=	Vector3.Lerp( t0, t1, factor );
-					var s	=	Vector3.Lerp( s0, s1, factor );
-
-					var x	=	Matrix.Scaling( s ) * Matrix.RotationQuaternion( q ) * Matrix.Translation( t );
-
-					destination[i] = x;
-				}
-			}
-		}
 
 		/*-----------------------------------------------------------------------------------------
 		 *
