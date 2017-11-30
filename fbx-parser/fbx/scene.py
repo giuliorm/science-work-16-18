@@ -1,3 +1,7 @@
+class AnimationMode:
+	REPEAT = "Repeat"
+	CLAMP = "Clamp"
+
 class Scene:
 	def __init__(self):
 		self.nodes = [] 	#List<Node>			nodes		= new List<Node>();
@@ -119,23 +123,21 @@ class Scene:
 		frame1	=	frame0 + 1
 		factor	= frame%1 if frame > 0 else (1 + frame%1)
 
-		if (animMode==AnimationMode.Repeat) {
-			frame0	=	MathUtil.Wrap( frame0, firstFrame, lastFrame );
-			frame1	=	MathUtil.Wrap( frame1, firstFrame, lastFrame );
-		} else if (animMode==AnimationMode.Clamp) {
-			frame0	=	MathUtil.Clamp( frame0, firstFrame, lastFrame );
-			frame1	=	MathUtil.Clamp( frame1, firstFrame, lastFrame );
-		}
+		if animMode == AnimationMode.REPEAT:
+			frame0	=	MathUtil.Wrap( frame0, firstFrame, lastFrame )
+			frame1	=	MathUtil.Wrap( frame1, firstFrame, lastFrame )
+		elif animMode == AnimationMode.CLAMP:
+			frame0	=	MathUtil.Clamp( frame0, firstFrame, lastFrame )
+			frame1	=	MathUtil.Clamp( frame1, firstFrame, lastFrame )
 
-		for (int i=0; i<Nodes.Count; i++) {
-			var node = Nodes[i];
+		for i in xrange(len(self.nodes)):
+			node = self.nodes[i]
 
-			if (node.TrackIndex<0) {
-				destination[i] = node.Transform;
-			} else {
-
-				var x0	=	GetAnimKey( frame0, node.TrackIndex );
-				var x1	=	GetAnimKey( frame1, node.TrackIndex );
+			if node.TrackIndex<0:
+				destination[i] = node.Transform
+			else:
+				x0 = self.GetAnimKey( frame0, node.TrackIndex )
+				x1	= self.GetAnimKey( frame1, node.TrackIndex )
 
 				Quaternion q0, q1;
 				Vector3 t0, t1;
@@ -154,12 +156,6 @@ class Scene:
 			}
 		}
 	}
-
-		/*-----------------------------------------------------------------------------------------
-		 *
-		 *	Optimization stuff :
-		 *
-		-----------------------------------------------------------------------------------------*/
 
 		class Comparer : IEqualityComparer<Mesh> {
 			public bool Equals ( Mesh a, Mesh b )
