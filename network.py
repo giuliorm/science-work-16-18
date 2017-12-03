@@ -3,22 +3,28 @@ import numpy as np
 import random
 from scipy.integrate import odeint
 import matplotlib.pyplot as plt
+from math import e
 
 
 class NeuralNetwork:
 
     # TODO: define a proper range of ode solution
 
-    def __init__(self, neurons_count, eps=10e-2):
+    def __init__(self, inputs_count, outputs_count, eps=10e-2):
 
         # Randomly initialize weights
-        self.neurons_count = 0
-        self.time = 0
-        self.a = np.array([random.random() * 2 * eps - eps for i in range(0, neurons_count)])
-        self.w = np.array([np.array([random.random() * 2 * eps - eps for i in range(0, neurons_count)])
-                           for i in range(0, neurons_count)])
+        #self.neurons_count = 0
+        #self.time = 0
+        self.l1 = np.array([random.random() * 2 * eps - eps for i in range(0, inputs_count)])
+        self.l2 =  np.array([random.random() * 2 * eps - eps for i in range(0, outputs_count)])
+        self.w1 = np.array([random.random() * 2 * eps - eps for i in range(0, inputs_count)])
+        self.w2 = np.array([random.random() * 2 * eps - eps for i in range(0, outputs_count)])
 
-        self.neurons_count = neurons_count
+        self.inputs_count = inputs_count
+        self.outputs_count = outputs_count
+
+    def __step(self, w, b):
+        return -b/w
 
     def plot_diff(self, t, sol, labels):
         for i in range(0,len(labels)):
@@ -51,10 +57,33 @@ class NeuralNetwork:
         # Return vector solution
         return sol
 
+    def sum(self, w, a):
+        s = 0
+        for i in range(len(w)):
+            s = s + w[i]*a[i]
+        return s
+
+    def sigmoid(self, x):
+        return 1/(1 + pow(e, -x))
+
+    def l1(self, x):
+        l1 = []
+        for i in range(len(self.w1)):
+            l1.append(self.sigmoid(self.w1[i] * x[i]))
+        return l1
+
+    def solution(self, x):
+
+        self.l2 = []
+        #for i in range(len(self.w2)):
+        #    self.l2.append(self.sigmoid(self.w2[i] * ))
+
     def __cost(self, y, linspace):
         y = np.asarray(y)
-        solution = self.solve_diff(y, linspace)
-        diff = solution - y
+        #solution = self.solve_diff(y, linspace)
+        #self.l1 = self.sigmoid(self.sum(self.w1, self.a))
+        #self.l2 = self.sigmoid(self.sum(self.w2, self.l1))
+        #diff = solution - y
         return 0.5 * np.mean(diff ** 2)
 
     def __grad__(self, y, linspace, eps = 0.01):
@@ -130,13 +159,20 @@ sinData = []
 
 t = np.linspace(-30, 30, 10000)
 
-for i in range(len(t)):
-    sinData.append([sin(t[i]), cos(t[i])])
+def pend(y, t):
+    theta, omega = y
+    dydt = [omega, -0.25 * omega - 5.0 * np.sin(theta)]
+    return dydt
 
-rez = n.fit(y=np.asarray(sinData), batch_size=20, linspace=t)
-genData = n.generate(t)
+sol = odeint(func=pend, y0=[np.pi - 0.1, 0.0], t=t)
 
-n.plot_diff(t, genData, ["gen sin {0}".format(i)])
+#for i in range(len(t)):
+#    sinData.append([sin(t[i]), cos(t[i])])
+
+rez = n.fit(y=sol, batch_size=20, linspace=t)
+#genData = n.generate(t)
+
+n.plot_diff(t, n.a, ["gen sin {0}".format(0)])
 
 print("Network train result: ")
 print(rez)
