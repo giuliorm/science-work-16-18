@@ -51,6 +51,31 @@ class NeuralNetwork:
         # Return vector solution
         return sol
 
+
+    def newNet(self, X, y, linspace, alpha=0.2, eps=10e-4):
+        for x in range(200):
+            for i in xrange(self.w.shape[0]):
+                for j in xrange(self.w.shape[1]):
+                    oldW = self.w[i][j]
+                    self.w[i][j] += eps
+                    preds1 = self.solution(y, linspace)
+                    error1 = preds1 - y
+                    gradient1 = X.T.dot(error1) / X.shape[0] # ??????
+                    self.w[i][j] = oldW
+                    self.w[i][j] -= eps
+                    preds2 = self.solution(y, linspace)
+                    error2 = preds2 - y
+                    gradient2 = X.T.dot(error2) / X.shape[0]  # ??????
+                    loss =  [np.sum(np.sum(error1[:,k])- np.sum(error2[:,k]))/2
+                             for k in range(error1.shape[1])]
+                    print "[INFO] epoch #{0}, weight #{1}#{2} loss={{".format(x + 1, i, j),
+                    for l in loss:
+                        print " {0},".format(l),
+                    print("}")
+                    gradient = (gradient1 - gradient2)/(2*eps)
+                    self.w[i][j] = oldW
+                    self.w += alpha * gradient
+
     def __cost(self, y, linspace):
         y = np.asarray(y)
         diff = self.solution(y, linspace) - y
@@ -61,7 +86,7 @@ class NeuralNetwork:
         num_grad = np.zeros(self.w.shape)
         # initial_cost = J(neuron, X, y)
 
-        for i in range(len(self.w)):
+        for i in range(self.w.shape[0]):
             old_wi = self.w[:,i].copy()
             # change weight
 
@@ -84,12 +109,7 @@ class NeuralNetwork:
     def solution(self, y, linspace):
         solution = []
         diffSol = self.solve_diff(linspace)
-        for i in range(len(y)):
-            s = 0
-            for j in range(len(self.w)):
-                s = s + diffSol[i][j]
-            solution.append(s)
-        return np.asarray(solution)
+        return np.asarray(diffSol)
 
     def generate(self, y, linspace):
         return self.solution(y, linspace)
@@ -145,7 +165,7 @@ from math import pow
 from math import e
 # neuron count corresponds to number of joints
 
-n = NeuralNetwork(neurons_count=3)
+n = NeuralNetwork(neurons_count=2)
 # sol = n.solve_diff(np.asarray([cos(x) for x in range(-10, 10)]))
 data = []
 
@@ -161,7 +181,11 @@ def pend(y, t):
 
 sol = odeint(func=pend, y0=[np.pi - 0.1, 0.0], t=t)
 #n.plot_diff(t, sol, ["theta ", "omega"])
-
+n.newNet(sol, sol, t)
+genData = n.generate(sol[:,0], t)
+n.plot_diff(t, genData, ["theta ", "omega"])
+while(True):
+    pass
 rez = n.fit(y=sol[:,0], batch_size=1000, linspace=t)
 genData = np.asarray([[x] for x in n.generate(sol[:,0], t)])
 n.plot_diff(t, genData, ["theta "])
