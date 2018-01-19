@@ -180,10 +180,10 @@ def pend(y, t):
     return dydt
 
 sol = odeint(func=pend, y0=[np.pi - 0.1, 0.0], t=t)
-#n.plot_diff(t, sol, ["theta ", "omega"])
+n.plot_diff(t, sol, ["f1 ", "f2"])
 n.newNet(sol, sol, t)
 genData = n.generate(sol[:,0], t)
-n.plot_diff(t, genData, ["theta ", "omega"])
+n.plot_diff(t, genData, ["f1 ", "f2"])
 while(True):
     pass
 rez = n.fit(y=sol[:,0], batch_size=1000, linspace=t)
