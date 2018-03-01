@@ -1,15 +1,19 @@
 import FbxCommon
 import fbx
-from fbxReader.fbx.display_animation import Animation
+from fbxReader.fbx.display_animation import Animation, FbxCriteria
+from fbx_spark.main.fbx_mapper.fbx_mapper import FbxMapper
 
 
-class FbxCriteria:
-    def __init__(self):
-        self.ANIM_STACK_CRITERIA = FbxCommon.FbxCriteria.ObjectType(FbxCommon.FbxAnimStack.ClassId)
-        self.ANIM_LAYER_CRITERIA = FbxCommon.FbxCriteria.ObjectType(FbxCommon.FbxAnimLayer.ClassId)
-
+import sys
 def main():
-    path  = r"C:\Users\zotovy\Documents\fbx\01\01_01.fbx"
+
+    path = r"C:\Users\ZotovYul\Documents\New Unity Project\Assets\Huge Mocap Library\mocap animations\01\01_01.fbx"
+    mapper = FbxMapper(path)
+    names, data = mapper.FbxToData()
+    print(names)
+    return
+
+    # path  = r"C:\Users\zotovy\Documents\fbx\01\01_01.fbx"
     manager = fbx.FbxManager.Create()
     importer = fbx.FbxImporter.Create(manager, 'myImporter')
     status = importer.Initialize( path )
@@ -49,35 +53,23 @@ def main():
             c_row.append(value)
         data.append(c_row)
     i = 1
-    from neural.simple_net import SimpleNet
-    import numpy as np
-    s = SimpleNet()
-    data = np.asarray(data)
-    s.train(data, 1000)
-    data_predicted = s.predict(data)
-    print(data_predicted)
-    errors = 0
-    count = 0
-    for i in range(len(data_predicted)):
-        for j in range(len(data_predicted[i])):
-            err = abs(data_predicted[i][j] - data[i][j])
-            if err > 10e-6:
-                errors = errors + 1
-            count = count + 1
-    print("Errors {0}%".format((float(errors)/count)*100))
+    # from neural.simple_net import SimpleNet
+    # import numpy as np
+    # s = SimpleNet()
+    # data = np.asarray(data)
+    # s.train(data, 1000)
+    # data_predicted = s.predict(data)
+    # print(data_predicted)
+    # errors = 0
+    # count = 0
+    # for i in range(len(data_predicted)):
+    #     for j in range(len(data_predicted[i])):
+    #         err = abs(data_predicted[i][j] - data[i][j])
+    #         if err > 10e-6:
+    #             errors = errors + 1
+    #         count = count + 1
+    # print("Errors {0}%".format((float(errors)/count)*100))
 
-    # for k in a.time_units.keys()
-    # with open('fbx {0}.csv'.format(scene.GetName()), newline='') as myFile:
-    #     writer = csv.DictWriter(myFile, fieldnames=names)
-    #     writer.writeheader()
-    #     writer.writerow()
-    # animStacksCount = scene.GetSrcObjectCount(criteria.ANIM_STACK_CRITERIA)
-    # for i in xrange(animStacksCount):
-    #     stack = scene.GetSrcObject(criteria.ANIM_STACK_CRITERIA, i)
-    #     layers = stack.GetMemberCount(criteria.ANIM_LAYER_CRITERIA)
-    #     for l in xrange(layers):
-    #         layer = stack.GetMember(criteria.ANIM_LAYER_CRITERIA, l)
-    #         print(layer.GetName())
-    #     print(stack.GetName())
+
 
 main()
