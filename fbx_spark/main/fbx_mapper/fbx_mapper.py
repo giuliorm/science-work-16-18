@@ -9,11 +9,13 @@ class FbxMapper:
     def __init__(self, path):
         # path to fbx file
         self.__path = path
+        self.__data = np.asarray([])
+        self.__columnNames = []
 
     def __CollectTimeAndColumnNames(self, timeUnits):
         time = set()
         names = set()
-        names.add(('Time', 'Time'))
+
         # collecting names and time
         for timeUnitKey in timeUnits.keys():
             timeUnit = timeUnits[timeUnitKey]
@@ -29,9 +31,9 @@ class FbxMapper:
 
         time = sorted(time)
         names = sorted(names)
-
         for timeKey in time:
-            c_row = [float(timeKey)]
+            c_row = []
+            c_row.append(timeKey)
             for bodyPartName, transformPropName in names:
                 value = None
                 if bodyPartName in timeUnits.keys():
@@ -40,10 +42,28 @@ class FbxMapper:
                             value = timeUnits[bodyPartName][timeKey][transformPropName]
                 c_row.append(value)
             data.append(c_row)
-        return names, np.asarray(data)
+        names_with_time = [('time', 'time')]
+        names_with_time.extend(names)
+        return names_with_time, np.asarray(data)
 
     def DataToCsv(self, csvPath):
-        pass
+        file = open(csvPath, "w")
+        names_to_write = []
+        eps = 5
+        for i in range(self.__data.shape[1]):
+            if (self.__data[:,i] == None).sum() - eps < 0:
+                names_to_write.append(True)
+            else:
+                names_to_write.append(False)
+        for i in range(len(self.__columnNames)):
+            if names_to_write[i] is True:
+                file.write("{0} {1},".format(self.__columnNames[i][0], self.__columnNames[i][1]))
+        for i in range(self.__data.shape[0]):
+            file.write("\n")
+            for j in range(self.__data.shape[1]):
+                if names_to_write[j] is True:
+                    file.write("{},".format(self.__data[i][j]))
+        file.close()
 
     def FbxToData(self):
         """
@@ -71,4 +91,6 @@ class FbxMapper:
             return np.asarray([])
 
         columnNames, data = self.__TimeUnitsToData(timeUnits)
+        self.__columnNames = columnNames
+        self.__data = np.asarray(data)
         return columnNames, np.asarray(data)
