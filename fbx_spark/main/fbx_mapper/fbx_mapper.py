@@ -46,24 +46,36 @@ class FbxMapper:
         names_with_time.extend(names)
         return names_with_time, np.asarray(data)
 
-    def DataToCsv(self, csvPath):
-        file = open(csvPath, "w")
+    def filter(self):
+
+        #file = open(csvPath, "w")
         names_to_write = []
         eps = 5
         for i in range(self.__data.shape[1]):
-            if (self.__data[:,i] == None).sum() - eps < 0:
+            col = self.__data[:,i]
+            nones_length = (col == None).sum()
+            if nones_length - eps < 0:
+                if nones_length != 0:
+                    for n in np.asarray(range(len(col)))[col == None]:
+                        f = col[n - 1 if n > 0 else 0]
+                        s = col[n + 1 if n < len(col) - 1 else len(col) - 1]
+                        self.__data[n,i] = (f + s) / 2
                 names_to_write.append(True)
             else:
                 names_to_write.append(False)
-        for i in range(len(self.__columnNames)):
-            if names_to_write[i] is True:
-                file.write("{0} {1},".format(self.__columnNames[i][0], self.__columnNames[i][1]))
-        for i in range(self.__data.shape[0]):
-            file.write("\n")
-            for j in range(self.__data.shape[1]):
-                if names_to_write[j] is True:
-                    file.write("{},".format(self.__data[i][j]))
-        file.close()
+        #for i in range(len(self.__columnNames)):
+        #    if names_to_write[i] is True:
+                #file.write("{0} {1},".format(self.__columnNames[i][0], self.__columnNames[i][1]))
+        #for i in range(self.__data.shape[0]):
+            #file.write("\n")
+        #    for j in range(self.__data.shape[1]):
+        #       if names_to_write[j] is True:
+        #            file.write("{},".format(self.__data[i][j]))
+        #file.close()
+        names_to_write = np.asarray(names_to_write)
+        self.__columnNames = np.asarray(self.__columnNames)
+        self.__data = np.asarray(self.__data)
+        return self.__columnNames[names_to_write], self.__data[:,names_to_write]
 
     def FbxToData(self):
         """
@@ -94,3 +106,6 @@ class FbxMapper:
         self.__columnNames = columnNames
         self.__data = np.asarray(data)
         return columnNames, np.asarray(data)
+
+    def DataToFbx(self, names, data):
+        pass

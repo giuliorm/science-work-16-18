@@ -7,7 +7,7 @@ class SimpleAutoencoder:
     def __init__(self, shape,
                  encoding_dim=32,
                  first_activation='relu',
-                 second_activation='sigmoid',
+                 second_activation='tanh',
                  optimizer='adadelta',
                  loss='binary_crossentropy'):
         self.__encoding_dim = encoding_dim

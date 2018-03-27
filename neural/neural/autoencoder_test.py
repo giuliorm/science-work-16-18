@@ -1,4 +1,4 @@
-from fbx_spark.main.neural.simple_autoencoder import SimpleAutoencoder
+from neural.simple_autoencoder import SimpleAutoencoder
 import matplotlib.pyplot as plt
 
 def autoencoder_test():
@@ -11,8 +11,8 @@ def autoencoder_test():
     x_test = x_test.astype('float32') / 255.
     x_train = x_train.reshape((len(x_train), np.prod(x_train.shape[1:])))
     x_test = x_test.reshape((len(x_test), np.prod(x_test.shape[1:])))
-    print x_train.shape
-    print x_test.shape
+    print (x_train.shape)
+    print (x_test.shape)
 
     autoencoder = SimpleAutoencoder((784,))
     autoencoder.fit(x_train, x_test)
@@ -37,3 +37,5 @@ def autoencoder_test():
         ax.get_xaxis().set_visible(False)
         ax.get_yaxis().set_visible(False)
     plt.show()
+
+autoencoder_test()
